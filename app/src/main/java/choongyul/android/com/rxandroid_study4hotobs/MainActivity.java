@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -37,18 +38,17 @@ public class MainActivity extends AppCompatActivity {
 
         list1 = (ListView) findViewById(R.id.list1);
         adapter1 = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, data1 );
+        list1.setAdapter(adapter1);
+
         list2 = (ListView) findViewById(R.id.list2);
         adapter2 = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, data2 );
+        list2.setAdapter(adapter2);
 
 
         // 발행자는 초당 한번씩의 아이템을 발행하는 로직을 갖는다
-        ConnectableObservable<Long>
-        Observable<String> hotObservable = Observable.create(emitter -> {
-            for(int i=0 ; i<100 ; i++) {
+        ConnectableObservable<Long> hotObservable = Observable.interval(1, TimeUnit.SECONDS).publish();
+        hotObservable.connect();
 
-                emitter.onNext("item = " + i);
-            }
-        });
         // 위에 작성한 Observable(발행자) 에서 바로 발행을 시작한다.
         hotObservable.subscribeOn(Schedulers.io()).publish(); // 이렇게 하면 구독자가 없어도 돌아간다.
 
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         result -> {
-                            data1.add(result);
+                            data1.add("ITEM1 : "+result);
                             adapter1.notifyDataSetChanged();
                         }
                 );
@@ -79,12 +79,12 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         Toast.makeText(this, "두번째 구독자 등록", Toast.LENGTH_SHORT).show();
-
+        // 3초후에 두번째 옵저버를 등록한다.
         hotObservable
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         result -> {
-                            data2.add(result);
+                            data2.add("ITEM2 : "+result);
                             adapter2.notifyDataSetChanged();
                         }
                 );
